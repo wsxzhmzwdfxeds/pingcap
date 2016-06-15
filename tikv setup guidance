@@ -1,0 +1,24 @@
+1. 搭建集群过程中如果出现错误，重新搭建时要注意残留数据对环境的影响。
+  一般来说，在./tikv-server 启动命令中指定的 -s /store 位置  和 etcd 文件中的default.etcd 的数据需要删除。
+  --snap-dir=/snap_store  指定raft生成的region snapshot 临时文件位置，在新的版本中已经不需要用户来指定啦。
+  如果没有指定，在启动tikv-server时会报错：
+    2016-06-14 16:50:26,876 tikv-server.rs:454 - INFO  - Start listening on 127.0.0.1:20161...
+    2016-06-14 16:50:26,890 mod.rs:154 - INFO  - starting working thread: store address resolve worker
+    2016-06-14 16:50:26,897 tikv-server.rs:98 - INFO  - malformed or missing server.capacity, use default
+    2016-06-14 16:50:26,897 tikv-server.rs:74 - INFO  - malformed or missing server.snapshot, use default
+    thread 'main' panicked at 'please specify server.snapshot', ../src/libcore/option.rs:699
+    note: Run with RUST_BACKTRACE=1 for a backtrace.
+2.  在tidb中：
+    make  时候的报错：
+
+    go get github.com/golang/lint/golint
+    go tool vet . 2>&1 | grep -vE 'vendor' | awk '{print} END{if(NR>0) {exit 1}}'
+    go tool vet --shadow . 2>&1 | grep -vE 'vendor' | awk '{print} END{if(NR>0) {exit 1}}'
+    golint ./... 2>&1 | grep -vE 'vendor' | awk '{print} END{if(NR>0) {exit 1}}'
+    /bin/sh: 1: golint: not found
+    Makefile:21: recipe for target 'check' failed
+    make: *** [check] Error 1
+    
+    没有把$GOROOT/bin  和 $GOPATH/bin 放到PATH 中。
+3.  编译tikv时如果报错提示相关软件包或者在编译过程的某一步卡住出错，可能是该软件包已经更新
+    需要更新version： vim /Cargo.lock 
