@@ -1,0 +1,79 @@
+Tikv set up：
+1．       Install golang
+Version >= 1.5  follow https://golang.org/doc/install
+Note: 需要源码安装。 设置GOROOT 和 GOPATH
+2．       Install rust nightly
+curl -sSf https://static.rust-lang.org/rustup.sh | sh -s -- --channel=nightly
+3．       Install etcd
+Version 3.0 beta
+  	https://github.com/coreos/etcd/releases/tag/v3.0.0-beta.0
+start etcd
+4．       Download pd
+    	Go get github.com/pingcap/pd
+5.    	cargo install rustfmt
+     	   Export PATH=”$PATH:/root/.cargo/bin”
+6.    	Install RocksDB
+   	https://github.com/facebook/rocksdb/releases
+         	make shared_lib -j8
+make install
+保证make shared_lib -j8生成的几个.so 文件都软连到/usr/local/lib/
+         	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/rocksdb-4.6.1
+         	export LIBRARY_PATH=$LIBRARY_PATH:/root/rocksdb-4.6.1
+            export PATH=$PATH:$HOME/.cargo/bin
+7.     pd server
+    	cd $GOPATH/src/github.com/pingcap/pd;
+  	make; cd bin;
+./pd-server -lease 1 -cluster-id 1
+8.    	TiKV
+    	Download : https://github.com/pingcap/tikv
+    	cd $path_of_tikv
+    	note: 修改/tikv/Cargo.lock  中 clippy 和clippy_lints 版本为最新
+    	make build
+    	cd target/debug;
+    	./tikv-server -s /tmp/tikv/store1 -A 127.0.0.1:20161 -I 1 --pd 127.0.0.1:1234 -S raftkv
+    	启动一个tikv-server 。
+注意：在同一个机器上起多个tikv-server时，store的地址不能共用，比如上面是/tmp/tikv/store1,你在本地启动新的tikv-server时候就是/tmp/tikv/store2;
+    	Tikv-server 最好启动三个，默认副本数是三，tikv的数据默认是存多个副本的，通过raft同步。
+9.    	TiDB test
+               	Download：https://github.com/pingcap/tidb
+               	Cp 到 $GOPATH/src/github.com/pingcap/tidb
+               	Make server
+               	./tidb-server -store tikv -path "127.0.0.1:2379/pd?cluster=1"
+		起一个mysql client 连上去：
+		mysql -h 127.0.0.1 -P 4000 -u root -D test
+ 
+ 
+ 
+ 
+ 
+ 
+ 可能遇到的问题： https://github.com/yangshuai93/pingcap/blob/master/tikv%20setup%20guidance
+ 
+ 
+Tikv-server:
+Options:
+   -A, --addr default is 127.0.0.1:20160
+                       set listening address
+       --advertise-addr 127.0.0.1:20160, if not set, use addr instead.
+                       set advertise listening address for client
+                       communication
+   -L, --log log level: trace, debug, info, warn, error, off
+                       set log level
+   -h, --help          print this help menu
+   -C, --config file path
+                       set configuration file
+   -s, --store /tmp/tikv/store
+                       set the path to rocksdb directory
+       --capacity default: 0 (unlimited)
+                       set the store capacity
+   -S, --dsn dsn: rocksdb, raftkv
+                       set which dsn to use, warning: default is rocksdb
+                       without persistent
+   -I, --cluster-id must greater than 0.
+                       set cluster id
+       --pd host:port  set pd address
+       --metric-addr host:port
+                       set statsd server address
+       --metric-prefix metric prefix: tikv
+                       set metric prefix
+
